@@ -1,9 +1,23 @@
 import os
 import time
+from threading import Thread
+from flask import Flask
 from telebot import TeleBot
 from google import genai
 from google.genai import types
 
+# Бесплатный мини-сервер для тарифа Free на Render
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+
+# Настройка Telegram бота
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
@@ -17,7 +31,7 @@ def start_cmd(message):
 @bot.message_handler(func=lambda m: True)
 def generate_video(message):
     prompt = message.text
-    msg = bot.reply_to(message, "⏳ Отправил запрос в Omni Flash 1.1. Генерация 10-секундного видео занимает около 1-2 минут...")
+    bot.reply_to(message, "⏳ Запрос отправлен в Omni Flash 1.1. Генерация 10-секундного видео занимает около 1-2 минут...")
 
     try:
         operation = client.models.generate_videos(
@@ -45,4 +59,8 @@ def generate_video(message):
     except Exception as e:
         bot.reply_to(message, f"❌ Ошибка генерации: {e}")
 
-bot.infinity_polling()
+if __name__ == "__main__":
+    # Запускаем мини-веб в фоне
+    Thread(target=run_web).start()
+    # Запускаем самого бота
+    bot.infinity_polling()
